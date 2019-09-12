@@ -3,18 +3,24 @@ import MenuItem from '@material-ui/core/MenuItem';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
+import {getAllRates} from "../api/api";
 
 const ConverterConteiner = () => {
     const [values, setValues] = React.useState({
-        age: '',
-        name: 'hai',
+        currencyFrom: ''
     });
 
-    const inputLabel = React.useRef(null);
-    const [labelWidth, setLabelWidth] = React.useState(0);
+    const [rates, setRates] = React.useState({
+       objectRates: {}
+    });
+
+    const state = {values, rates};
+
     React.useEffect(() => {
-        debugger;
-        setLabelWidth(inputLabel.current.offsetWidth);
+        getAllRates()
+            .then(data => {
+                setRates(data.rates);
+            });
     }, []);
 
     function handleChange(event) {
@@ -22,25 +28,25 @@ const ConverterConteiner = () => {
             ...oldValues,
             [event.target.name]: event.target.value,
         }));
+        console.log(state.rates[event.target.value]);
     }
     return (
         <div>
             <form>
                 <FormControl>
+                    <FormHelperText>to</FormHelperText>
                     <Select
-                        value={values.age}
+                        value={values.currencyFrom}
                         onChange={handleChange}
-                        name="age"
-                        displayEmpty
+                        name="currencyFrom"
                     >
-                        <MenuItem value="" disabled>
-                            Placeholder
-                        </MenuItem>
-                        <MenuItem value={10}>Ten</MenuItem>
-                        <MenuItem value={20}>Twenty</MenuItem>
-                        <MenuItem value={30}>Thirty</MenuItem>
+                        {Object.keys(state.rates)
+                            .map(
+                                (r, i) => {
+                               return(<MenuItem key={i} value={r}>{r}</MenuItem>);
+                           }
+                        )}
                     </Select>
-                    <FormHelperText>Placeholder</FormHelperText>
                 </FormControl>
             </form>
         </div>

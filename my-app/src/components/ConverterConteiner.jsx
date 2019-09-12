@@ -4,17 +4,31 @@ import FormHelperText from '@material-ui/core/FormHelperText';
 import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
 import {getAllRates} from "../api/api";
+import TextField from '@material-ui/core/TextField';
 
 const ConverterConteiner = () => {
-    const [values, setValues] = React.useState({
-        currencyFrom: ''
+
+    const [valueTo, setValueTo] = React.useState("");
+    const [convertCoefficient, setConvertCoefficient] = React.useState({
+        coefficient: 1
     });
 
+    const [valueFrom, setValueFrom] = React.useState({
+        inputValueFrom: 1
+    });
+    const changeValueFrom = name => event => {
+        setValueFrom({...valueFrom, [name]: parseInt(event.target.value, 10)});
+    };
+
+
+    const [currencyTo, setCurrencyTo] = React.useState({
+        selectedCurrencyTo: ''
+    });
     const [rates, setRates] = React.useState({
-       objectRates: {}
+        objectRates: {}
     });
 
-    const state = {values, rates};
+    const state = {currencyTo, rates, valueFrom, convertCoefficient, valueTo};
 
     React.useEffect(() => {
         getAllRates()
@@ -23,34 +37,60 @@ const ConverterConteiner = () => {
             });
     }, []);
 
-    function handleChange(event) {
-        setValues(oldValues => ({
+    function changeCurrencyTo(event) {
+        setCurrencyTo(oldValues => ({
             ...oldValues,
             [event.target.name]: event.target.value,
         }));
-        console.log(state.rates[event.target.value]);
+        setConvertCoefficient(state.rates[event.target.value]);
     }
+
+    const getConvertionResult = (e) => {
+        debugger;
+        const result = state.valueFrom.inputValueFrom * state.convertCoefficient;
+        setValueTo((Math.round(result*100)/100).toString(10));
+        e.preventDefault();
+    };
+
+
+    window.state = state;
     return (
         <div>
-            <form>
+            <form onSubmit={(e) => getConvertionResult(e)}>
                 <FormControl>
                     <FormHelperText>to</FormHelperText>
                     <Select
-                        value={values.currencyFrom}
-                        onChange={handleChange}
-                        name="currencyFrom"
+                        value={currencyTo.selectedCurrencyTo}
+                        onChange={changeCurrencyTo}
+                        name="selectedCurrencyTo"
                     >
                         {Object.keys(state.rates)
                             .map(
                                 (r, i) => {
-                               return(<MenuItem key={i} value={r}>{r}</MenuItem>);
-                           }
-                        )}
+                                    return (<MenuItem key={i} value={r}>{r}</MenuItem>);
+                                }
+                            )}
                     </Select>
                 </FormControl>
+                <div>
+                    <TextField
+                        label="from"
+                        value={valueFrom.inputValueFrom}
+                        onChange={changeValueFrom('inputValueFrom')}
+                        type="number"
+                    />
+                    <TextField
+                        label="to"
+                        value={state.valueTo}
+                        type="text"
+                    />
+                </div>
+                <button type="submit">Конвертировать!</button>
             </form>
         </div>
     );
 };
 
 export default ConverterConteiner;
+
+

@@ -4,7 +4,14 @@ const instance = axios.create({
     baseURL: "https://api.exchangeratesapi.io"
 });
 
-export const getAllRates = async () => {
+export const getAllRates = () => {
     return instance.get("/latest")
-        .then(response => response.data)
+        .then(response => {return response.data;});
 };
+
+export const getSelectedRates = (currencyFrom, CurrencyTo) => {
+    return instance.get(`/latest?base=${currencyFrom}&symbols=${CurrencyTo}`)
+        .then(response => response.data);
+};
+
+

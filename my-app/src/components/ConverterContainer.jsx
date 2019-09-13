@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useReducer} from 'react';
 import MenuItem from '@material-ui/core/MenuItem';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import FormControl from '@material-ui/core/FormControl';
@@ -6,69 +6,60 @@ import Select from '@material-ui/core/Select';
 import {getAllRates, getSelectedRates} from "../api/api";
 import TextField from '@material-ui/core/TextField';
 
+
+const reducer = (prevState, updatedProperty) => ({
+  ...prevState,
+  ...updatedProperty,
+});
+
+const initState = {
+  currencyTo: {selectedCurrencyTo: ''},
+  currencyFrom: {selectedCurrencyFrom: ''},
+  ratesTo: [],
+  ratesFrom: [],
+  convertCoefficient: 1,
+  valueFrom: 1,
+  valueTo: 1
+};
+
+
 const ConverterContainer = () => {
-    const [currencyFrom, setCurrencyFrom] = useState({
-        selectedCurrencyFrom: ''
-    });
 
-    const [ratesFrom, setRatesFrom] = useState([]);
-
-    const [currencyTo, setCurrencyTo] = useState({
-        selectedCurrencyTo: ''
-    });
-
-    const [ratesTo, setRatesTo] = useState([]);
-
-    const [convertCoefficient, setConvertCoefficient] = useState(1);
-    const [valueFrom, setValueFrom] = useState({
-        inputValueFrom: 1
-    });
-    const [valueTo, setValueTo] = useState("");
-
-    const state = {currencyTo,
-        currencyFrom, ratesTo, ratesFrom, convertCoefficient, valueFrom, valueTo};
-
-    function changeCurrencyFrom(event) {
-        setCurrencyFrom(oldValues => ({
-            ...oldValues,
-            [event.target.name]: event.target.value,
-        }));
-    }
-    function changeCurrencyTo(event) {
-        setCurrencyTo(oldValues => ({
-            ...oldValues,
-            [event.target.name]: event.target.value,
-        }));
-    }
-    const changeValueFrom = name => event => {
-        setValueFrom({...valueFrom, [name]: parseInt(event.target.value, 10)});
-    };
+    const [state, setState] = useReducer(reducer, initState);
 
     useEffect(
         () => {
             getAllRates()
                 .then(data => {
                     const mas = Object.keys(data.rates);
-                    mas.unshift(data.base);
-                    setRatesFrom(mas);
-                    setRatesTo(mas);
+                    setState({ratesFrom: mas});
+                    setState({ratesTo: mas});
                 });
         }, []);
 
+
+    useEffect(() => {
+        const result = state.valueFrom * state.convertCoefficient;
+        setState({valueTo: (Math.round(result * 100) / 100).toString(10)});
+    }, [state.convertCoefficient]);
+
+
+    const changeCurrency = (event) => (property) => {
+        setState({[property]:
+            {[event.target.name]: event.target.value}
+      })
+    };
+
+    const changeValueFrom = name => event => {
+        setState({[name]: parseInt(event.target.value, 10)});
+    };
     const getConvertionResult = (e) => {
         getSelectedRates(state.currencyFrom.selectedCurrencyFrom, state.currencyTo.selectedCurrencyTo)
             .then(data => {
-                debugger;
-                setConvertCoefficient(data.rates[state.currencyTo.selectedCurrencyTo]);
-                console.log(data.rates[state.currencyTo.selectedCurrencyTo]);
+                setState({convertCoefficient: data.rates[state.currencyTo.selectedCurrencyTo]});
             });
         e.preventDefault();
     };
-
-    useEffect(() => {
-        const result = valueFrom.inputValueFrom * convertCoefficient;
-        setValueTo((Math.round(result * 100) / 100).toString(10));
-    }, [state.convertCoefficient]);
 
     window.state = state;
     return (
@@ -78,8 +69,8 @@ const ConverterContainer = () => {
                     <FormControl>
                         <FormHelperText>from</FormHelperText>
                         <Select
-                            value={currencyFrom.selectedCurrencyFrom}
-                            onChange={changeCurrencyFrom}
+                            value={state.currencyFrom.selectedCurrencyFrom}
+                            onChange={(e) => changeCurrency(e)("currencyFrom")}
                             name="selectedCurrencyFrom"
                         >
                             {state.ratesFrom
@@ -93,8 +84,8 @@ const ConverterContainer = () => {
                     <FormControl>
                         <FormHelperText>to</FormHelperText>
                         <Select
-                            value={currencyTo.selectedCurrencyTo}
-                            onChange={changeCurrencyTo}
+                            value={state.currencyTo.selectedCurrencyTo}
+                            onChange={(e) => changeCurrency(e)("currencyTo")}
                             name="selectedCurrencyTo"
                         >
                             {state.ratesTo
@@ -109,8 +100,8 @@ const ConverterContainer = () => {
                 <div>
                     <TextField
                         label="from"
-                        value={valueFrom.inputValueFrom}
-                        onChange={changeValueFrom('inputValueFrom')}
+                        value={state.valueFrom}
+                        onChange={changeValueFrom('valueFrom')}
                         type="number"
                     />
                     <TextField
